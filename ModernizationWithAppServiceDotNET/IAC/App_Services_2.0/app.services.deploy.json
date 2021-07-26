@@ -1,0 +1,77 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "appServicePlanName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Application Service Plan"
+            }
+        },
+        "location": {
+            "defaultValue": "westus2",
+            "type": "string",
+            "metadata": {
+                "description": "Location for resource"
+            }
+        },
+        "guid": {
+            "type": "string",
+            "defaultValue": "pid-5a669062-d8d0-471f-b36a-40115651cea7"
+        },
+        "webAppPortalName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Web Application Portal Name"
+            }
+        }
+    },
+    "variables": {
+        "appName": "[parameters('webAppPortalName')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2019-08-01",
+            "name": "[parameters('appServicePlanName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [],
+            "sku": {
+                "name": "D1",
+                "tier": "Shared",
+                "size": "D1",
+                "family": "D",
+                "capacity": 0
+            },
+            "kind": "app",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2019-08-01",
+            "name": "[parameters('webAppPortalName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', parameters('appServicePlanName'))]"
+            ],
+            "kind": "app",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+                "httpsOnly": true
+            }
+        }
+    ],
+    "outputs": {
+        "tenantId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites', parameters('webAppPortalName')), '2019-08-01', 'full').identity.tenantId]"
+        },
+        "objectId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites', parameters('webAppPortalName')), '2019-08-01', 'full').identity.principalId]"
+        }
+    }
+}

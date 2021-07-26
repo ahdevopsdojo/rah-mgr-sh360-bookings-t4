@@ -1,0 +1,96 @@
+#Name of the workflow
+name: Bookings-CI-Base
+
+#Triggers to run the workflow
+on:
+  #TODO [CI]: Uncomment the below block to enable push & pull_request triggers on build workflow.
+  #push: #To trigger workflow when an update in pushed onto main branch
+  #  branches: [main]
+  #pull_request: #To trigger workflow when a PR is raised against main branch
+  #  branches: [main]
+  workflow_dispatch: #To trigger workflow manually using GUI
+    branches: [main, users/**]
+
+jobs:
+  # Build Job
+  build:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository #Checkout the Repository into the agent
+        uses: actions/checkout@v2
+
+      #TODO [CI]: This action is used to send workflow status to subscribed Microsoft Teams channel. Remove the below if condition to enable the action
+      - name: Microsoft Teams Deploy Card
+        uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+        if: ${{ false }}
+        with:
+          # Microsoft Teams webhook URI
+          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          # Github token
+          github-token: ${{ github.token }}
+          # Name of the environment (won't be included in the card if none)
+          environment: build
+          # Show the MS Teams card upon failure only of this Github Actions job
+          show-on-failure: true
+
+      # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+      - name: Set Environment Variables - Organizational Details #Set Variables - Organizational Details
+        uses: ./.github/actions/set-variable
+        with:
+          variableFileName: "org-details"
+
+      # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+      - name: Set Environment Variables - Booking All Stages #Set Variables - Booking All Stages
+        uses: ./.github/actions/set-variable
+        with:
+          variableFileName: "all-stages-booking"
+
+      - name: Setup NuGet #Setup Nuget
+        uses: NuGet/setup-nuget@v1.0.5
+        with:
+          nuget-version: latest
+
+      - name: Nuget Restore #Nuget Restore
+        run: nuget restore ${{ env.Solution_Path }}
+
+      - name: Nuget Update #Nuget Update
+        run: nuget update ModernizationWithAppServiceDotNET/SmartHotel360.Registration.Web.Tests/packages.config -Id Selenium.WebDriver.ChromeDriver
+
+      - name: Setup MSBuild #Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Build Solution #Build Bookings Web App
+        run: msbuild ${{ env.Solution_Path }} /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="D:\a\${{ env.repoName }}"
+
+      #TODO [CI]: This action is used to run unit tests in workflow. Remove the below if condition to enable the action
+      - name: Run Unit Test #Run Unit Tests
+        if: ${{ false }}
+        run: dotnet test "D:\a\${{ env.repoName }}\${{ env.repoName }}\ModernizationWithAppServiceDotNET\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll" --results-directory "D:\a\${{ env.repoName }}\${{ env.repoName }}\" --filter TestCategory!=UITest
+
+      - name: Copy Items to Upload Artifact folder #copy the files to publish as artifacts
+        run: |
+          New-Item -Path "D:\a\${{ env.repoName }}\" -Name "upload" -ItemType "directory"
+          $destinationRoot = "D:\a\${{ env.repoName }}\upload"
+
+          Copy-Item -Path "D:\a\${{ env.repoName }}\SmartHotel360.Registration.Web.zip" -Recurse -Destination $destinationRoot -Container  
+          Copy-Item -Path "ModernizationWithAppServiceDotNET/SmartHotel360.Registration.Web" -Recurse -Destination $destinationRoot -Container
+          Copy-Item -Path "ModernizationWithAppServiceDotNET/SmartHotel360.Registration.Web.Int.Tests" -Recurse -Destination $destinationRoot -Container
+          Copy-Item -Path "ModernizationWithAppServiceDotNET/SmartHotel360.Registration.Web.Tests" -Recurse -Destination $destinationRoot -Container
+        shell: powershell
+
+      - name: Publish Artifact #Publish Artifacts to be consumed by the release pipeline
+        uses: actions/upload-artifact@master
+        with:
+          name: drop
+          path: D:\a\${{ env.repoName }}\upload
+
+      #TODO [CI]: This action is used to trigger the release workflow in dev environment. Replace the ${{ false }} with github.event_name != 'pull_request' to enable the below action
+      - name: Trigger - Release to dev
+        if: ${{ false }} #github.event_name != 'pull_request'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Bookings-CD-Base
+          token: ${{ secrets.PAT }}
+          inputs: '{ "environment": "dev" }'

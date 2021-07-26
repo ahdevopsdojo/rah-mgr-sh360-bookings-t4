@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "appInsightsName": {
+          "type": "String",
+          "metadata": {
+              "description": "Name of the Application Insights"
+          }
+      },
+      "guid": {
+      "type": "string",
+      "defaultValue": "pid-5a669062-d8d0-471f-b36a-40115651cea7"
+    },
+      "appInsightsType": {
+          "defaultValue": "web",
+          "allowedValues": [
+              "web",
+              "java",
+              "other"
+          ],
+          "type": "String",
+          "metadata": {
+              "description": "Enter the application type"
+          }
+      },
+      "location": {
+          "defaultValue": "westus2",
+          "type": "String",
+          "metadata": {
+              "description": "Location for resource"
+          }
+      },
+      "guidValue1": {
+        "type": "string",
+        "defaultValue": "85efee8b-43f9-4f52-8051-f50a863aad68"
+      },
+      "guidValue2": {
+        "type": "string",
+        "defaultValue": "38ba563d-2f02-496d-8e98-4d2773620ba3"
+      }
+  },
+  "variables": {
+      "apiVersion": "[providers('Microsoft.Insights', 'components').apiVersions[0]]",
+      "appInsightsName": "[parameters('appInsightsName')]",
+      "resourceId": "[resourceId('Microsoft.Insights/components', parameters('appInsightsName'))]"
+  },
+  "resources": [
+      { // add this resource to the resources section in the mainTemplate.json (do not add the entire file)
+      "apiVersion": "2018-02-01",
+      "name": "[concat(parameters('guid'))]", // use your generated GUID here
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+    {
+        "dependsOn": [
+            "[concat('Microsoft.Insights/components/', variables('appInsightsName'))]"
+        ],
+        "name": "[concat('ping-web-',variables('appInsightsName'))]",
+        "type": "microsoft.insights/webtests",
+        "location": "eastus",
+        "apiVersion": "2015-05-01",
+        "tags": { "[concat('hidden-link:', resourceId('Microsoft.Insights/components', variables('appInsightsName')))]": "Resource" },
+        "kind": null,
+        "properties": {
+          "SyntheticMonitorId": "[concat('ping web-',variables('appInsightsName'))]",
+          "Name": "ping web",
+          "Description": "",
+          "Enabled": true,
+          "Frequency": 300,
+          "Timeout": 120,
+          "Kind": "ping",
+          "RetryEnabled": true,
+          "Locations": [
+            {
+              "Id": "us-ca-sjc-azr"
+            },
+            {
+              "Id": "us-il-ch1-azr"
+            },
+            {
+              "Id": "us-va-ash-azr"
+            },
+            {
+              "Id": "apac-hk-hkn-azr"
+            },
+            {
+              "Id": "emea-au-syd-edge"
+            }
+          ],
+          "Configuration": {
+            "WebTest": "[concat('<WebTest         Name=\"ping web\"                  Enabled=\"True\"         CssProjectStructure=\"\"         CssIteration=\"\"         Timeout=\"120\"         WorkItemIds=\"\"         xmlns=\"http://microsoft.com/schemas/VisualStudio/TeamTest/2010\"         Description=\"\"         CredentialUserName=\"\"         CredentialPassword=\"\"         PreAuthenticate=\"True\"         Proxy=\"default\"         StopOnError=\"False\"         RecordedResultFile=\"\"         ResultsLocale=\"\">        <Items>        <Request         Method=\"GET\"                  Version=\"1.1\"         Url=\"https://',variables('appInsightsName'),'.azurewebsites.net/\"         ThinkTime=\"0\"         Timeout=\"120\"         ParseDependentRequests=\"False\"         FollowRedirects=\"True\"         RecordResult=\"True\"         Cache=\"False\"         ResponseTimeGoal=\"0\"         Encoding=\"utf-8\"         ExpectedHttpStatusCode=\"200\"         ExpectedResponseUrl=\"\"         ReportingName=\"\"         IgnoreHttpStatusCode=\"False\" />        </Items>        </WebTest>')]"
+          }
+        }
+    },
+
+      {
+          "type": "Microsoft.Insights/components",
+          "apiVersion": "[providers('Microsoft.Insights', 'components').apiVersions[0]]",
+          "name": "[variables('appInsightsName')]",
+          "location": "[parameters('location')]",
+          "properties": {
+              "ApplicationId": "[variables('appInsightsName')]",
+              "Application_Type": "[parameters('appInsightsType')]"
+          }
+      }
+  ],
+  "outputs": {
+      "appInsightsName": {
+          "type": "String",
+          "value": "[variables('appInsightsName')]"
+      },
+      "appInsightsKey": {
+          "type": "String",
+          "value": "[reference(variables('resourceId'), variables('apiVersion')).instrumentationKey]"
+      },
+      "appInsightsAppId": {
+          "type": "String",
+          "value": "[reference(variables('resourceId'), variables('apiVersion')).AppId]"
+      }
+  }
+}
