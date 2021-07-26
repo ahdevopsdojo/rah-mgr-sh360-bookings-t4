@@ -265,6 +265,19 @@ jobs:
       with:
         app-name: "${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}"
         package: "$GITHUB_WORKSPACE/drop/SmartHotel360.Registration.Web"
+        
+    - name: Invoke Website
+      shell: bash
+      run: |
+        echo "Invoking https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net/"
+        status=$(curl "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')
+        echo $status
+        if [ $status -ne 200 ];
+        then
+          echo "Retrying..."
+          status=$(curl "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')\
+          echo $status
+        fi
 
     #TODO [CD]: This action is used to update the deployment status of release if the release is successful. Replace the ${{ false }} with success() to enable the below action
     - name: Update deployment status ${{ env.pipeline_env }} (success)
@@ -591,11 +604,11 @@ jobs:
 
   Release_To_Next_Env:
     #TODO [CQ]: In needs now also add BDD_Automated_Tests,UI_Tests. This ensures this stage runs after release & BDD & UI Test stages run
-    needs: [release,BDD_Automated_Tests,UI_Tests]
+    needs: [release,BDD_Automated_Tests]
     runs-on: ubuntu-latest # The type of runner that the job will run on
     # The below conditions ensure that, this stage only runs for dev & qa, and only if release stages is a success, and that the tests didn't fail
     #TODO [CQ]: In if condition now also add BDD_Automated_Tests & UI_Tests success condition. This ensures this stage only runs if the tests pass
-    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
+    if: always() && needs.release.outputs.pipeline_env != 'dev' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure'
     steps:
     - name: Checkout Repository #Checkout the Repository into the agent
       uses: actions/checkout@v2
@@ -603,11 +616,11 @@ jobs:
     - name: Configure parameters for Workflow Dispatch # Based on the current environment, this action evaluates the next environment to run the CD pipeline
       shell: bash
       run: |
-        if [ ${{ needs.release.outputs.pipeline_env }} = 'dev' ]; then
+        if [ ${{ needs.release.outputs.pipeline_env }} = 'prd' ]; then
           echo "trigger=qa" >> $GITHUB_ENV
         fi
         if [ ${{ needs.release.outputs.pipeline_env }} = 'qa' ]; then
-          echo "trigger=prd" >> $GITHUB_ENV
+          echo "trigger=dev" >> $GITHUB_ENV
         fi
 
     # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
@@ -647,16 +660,16 @@ jobs:
         customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
 #
     # This action is used to evaluate the latency of the PRD bookings application. If it is less than the threshold, the pipeline proceeds to PRD or else it stops release to PRD.
-    - name: Check Latency
-      shell: bash
-      if: env.trigger == 'prd'
-      run: |
-        slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
-        echo $slo
-        if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
-        then
-          exit 1
-        fi
+    #- name: Check Latency
+    #  shell: bash
+    #  if: env.trigger == 'prd'
+    #  run: |
+    #    slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
+    #    echo $slo
+    #    if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
+    #    then
+    #      exit 1
+    #    fi
 #
     # This action is used to get the availability of the PRD bookings application using App Insights API
     - name: Get Availability
@@ -682,20 +695,20 @@ jobs:
 
     # This action is used to evaluate the App Service HTTP Logs from log analytics workspace of the PRD bookings application. 
     # If no logs with status code 500 are returned, the pipeline proceeds to PRD or else if it returns atleast one status 500 error, it stops release to PRD.
-    - name: Log Analytics - Check App Service Logs # Create Resource Group using azure cli commands
-      uses: azure/CLI@v1
-      if: env.trigger == 'prd'
-      with:
-        inlineScript: |
-          az config set extension.use_dynamic_install=yes_without_prompt
-          workspaceId=$(az monitor log-analytics workspace show --resource-group "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --workspace-name "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceName }}-${{ env.team_suffix }}" | jq .customerId | tr -d '"')
-          logs=$(az monitor log-analytics query -w $workspaceId --analytics-query "AppServiceHTTPLogs | where TimeGenerated > ago(24h) and ScStatus ==500" | jq .[].CIp)
-          if [ -z "$logs" ]; then 
-            echo "PRD App Service is up and running"
-          else
-            echo "PRD App Service was down in last 24 hrs"
-            exit 1
-          fi
+    #- name: Log Analytics - Check App Service Logs # Create Resource Group using azure cli commands
+    #  uses: azure/CLI@v1
+    #  if: env.trigger == 'prd'
+    #  with:
+    #    inlineScript: |
+    #      az config set extension.use_dynamic_install=yes_without_prompt
+    #      workspaceId=$(az monitor log-analytics workspace show --resource-group "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --workspace-name "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceName }}-${{ env.team_suffix }}" | jq .customerId | tr -d '"')
+    #      logs=$(az monitor log-analytics query -w $workspaceId --analytics-query "AppServiceHTTPLogs | where TimeGenerated > ago(24h) and ScStatus ==500" | jq .[].CIp)
+    #      if [ -z "$logs" ]; then 
+    #        echo "PRD App Service is up and running"
+    #      else
+    #        echo "PRD App Service was down in last 24 hrs"
+    #        exit 1
+    #      fi
 
     # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
     #TODO [CD]: Remove the below if condition to enable the action
