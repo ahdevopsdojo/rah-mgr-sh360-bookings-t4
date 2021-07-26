@@ -289,146 +289,142 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: BDD Automated Tests. Uncomment the below block to enable the BDD Automated Test Stage
 
-  #BDD_Automated_Tests:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: windows-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    bdd_status: ${{ steps.bddtests.outcome }}
-  #  if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #  
-  #  # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-  #  - name: Download build artifacts
-  #    uses: dawidd6/action-download-artifact@v2
-  #    with:
-  #      workflow: bookings-ci-base.yml
+  BDD_Automated_Tests:
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: windows-latest # The type of runner that the job will run on
+    outputs: # Outputs expected from release job to be used in other jobs
+      bdd_status: ${{ steps.bddtests.outcome }}
+    if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+    
+    # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+    - name: Download build artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: bookings-ci-base.yml
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-booking'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-booking'
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
 #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
 #
-  #  #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action    
-  #  - name: Update App Settings for BDD automated functional tests
-  #    if: ${{ false }}
-  #    run: ModernizationWithAppServiceDotNET/SmartHotel360.Registration.ARM/SpecflowIntegrationTest/UpdateAppConfigAtRunTime.ps1 -configPath "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Int.Tests\bin\Debug\SmartHotel360.Registration.Web.Integration.Tests.dll.config" -authenticationMode "${{ env.authenticationMode }}" -sqlserver "${{ env.cus_prefix }}-${{ env.sqlserver }}-${{ env.team_suffix }}" -databaseName "${{ env.databasename }}" -keyVaultUri "https://${{ env.cus_prefix }}-${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -servicePrincipalClientId "${{ env.servicePrincipleClientId }}" -servicePrincipalPassword "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-  #    shell: powershell
+    #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action    
+    - name: Update App Settings for BDD automated functional tests
+      run: ModernizationWithAppServiceDotNET/SmartHotel360.Registration.ARM/SpecflowIntegrationTest/UpdateAppConfigAtRunTime.ps1 -configPath "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Int.Tests\bin\Debug\SmartHotel360.Registration.Web.Integration.Tests.dll.config" -authenticationMode "${{ env.authenticationMode }}" -sqlserver "${{ env.cus_prefix }}-${{ env.sqlserver }}-${{ env.team_suffix }}" -databaseName "${{ env.databasename }}" -keyVaultUri "https://${{ env.cus_prefix }}-${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -servicePrincipalClientId "${{ env.servicePrincipleClientId }}" -servicePrincipalPassword "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
+      shell: powershell
 #
-  #  #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action  
-  #  - name: Run BDD Test
-  #    if: ${{ false }}
-  #    id: bddtests
-  #    run: dotnet test D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Int.Tests\bin\Debug\SmartHotel360.Registration.Web.Integration.Tests.dll --results-directory D:\a\DevOps-Dojo-Booking\TestResults
+    #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action  
+    - name: Run BDD Test
+      id: bddtests
+      run: dotnet test D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Int.Tests\bin\Debug\SmartHotel360.Registration.Web.Integration.Tests.dll --results-directory D:\a\DevOps-Dojo-Booking\TestResults
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
 
-  #UI_Tests:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: windows-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    ui_status: ${{ steps.uitests.outcome }}
-  #  if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #  
-  #  # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-  #  - name: Download build artifacts
-  #    uses: dawidd6/action-download-artifact@v2
-  #    with:
-  #      workflow: bookings-ci-base.yml
+  UI_Tests:
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: windows-latest # The type of runner that the job will run on
+    outputs: # Outputs expected from release job to be used in other jobs
+      ui_status: ${{ steps.uitests.outcome }}
+    if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+    
+    # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+    - name: Download build artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: bookings-ci-base.yml
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-booking'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-booking'
 #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
 #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
 #
-  #  # This action installs/updates the chrome version to the latest version in the agent    
-  #  - name: Update Chrome Version
-  #    run: |
-  #      $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
-  #      mkdir c:\tmp
-  #      $output = "c:\tmp\chrome.msi"
-  #      Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
-  #      msiexec /q /i c:\tmp\chrome.msi
-  #      start-sleep -Seconds 120 # sleep for 2 mins just to allow updates to be processed 
-  #      Remove-Item -Path c:\tmp\chrome.msi
-  #    shell: powershell
-  #  
-  #  #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
-  #  - name: Update app config for UI Tests
-  #    if: ${{ false }}
-  #    run: ModernizationWithAppServiceDotNET/SmartHotel360.Registration.ARM/UITest/UpdateAppConfigSettingsUITests.ps1 -configPath "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll.config" -webPortalUrl "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net"
-  #    shell: powershell
-  #    
-  #  #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action    
-  #  - name: Run UI Test
-  #    if: ${{ false }}
-  #    id: uitests
-  #    run: dotnet test D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll --results-directory D:\a\DevOps-Dojo-Booking\TestResults --filter TestCategory=UITest
+    # This action installs/updates the chrome version to the latest version in the agent    
+    - name: Update Chrome Version
+      run: |
+        $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
+        mkdir c:\tmp
+        $output = "c:\tmp\chrome.msi"
+        Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
+        msiexec /q /i c:\tmp\chrome.msi
+        start-sleep -Seconds 120 # sleep for 2 mins just to allow updates to be processed 
+        Remove-Item -Path c:\tmp\chrome.msi
+      shell: powershell
+    
+    #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
+    - name: Update app config for UI Tests
+      run: ModernizationWithAppServiceDotNET/SmartHotel360.Registration.ARM/UITest/UpdateAppConfigSettingsUITests.ps1 -configPath "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll.config" -webPortalUrl "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net"
+      shell: powershell
+      
+    #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action    
+    - name: Run UI Test
+      id: uitests
+      run: dotnet test D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll --results-directory D:\a\DevOps-Dojo-Booking\TestResults --filter TestCategory=UITest
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: AZSK Scan. Uncomment the below block of code to enable AZSK Scan stage
@@ -562,46 +558,46 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: Issues Creation. Uncomment the below block to enable the Issues Creation Stage.
 
-  #Issues_Creation:
-  #  needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
-  #  # This condition ensures this stage only runs if either BDD or UI Test fails
-  #  if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
-  #  runs-on: ubuntu-latest # The type of runner that the job will run on
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
+  Issues_Creation:
+    needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
+    # This condition ensures this stage only runs if either BDD or UI Test fails
+    if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
+    runs-on: ubuntu-latest # The type of runner that the job will run on
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
 #
-  #  #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail. 
-  #  #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action   
-  #  - name: Create ADO Bug on Failure for BDD Tests
-  #    uses: JasonEtco/create-an-issue@v2
-  #    if: ${{ false }} #needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
-  #    env:
-  #      GITHUB_TOKEN: ${{ secrets.PAT }} 
-  #    with:
-  #      filename: .github/issues/bdd-issue-template.md
-  #      update_existing: true
+    #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail. 
+    #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action   
+    - name: Create ADO Bug on Failure for BDD Tests
+      uses: JasonEtco/create-an-issue@v2
+      if: needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }} 
+      with:
+        filename: .github/issues/bdd-issue-template.md
+        update_existing: true
 #
-  #  #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail. 
-  #  #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action   
-  #  - name: Create ADO Bug on Failure for UI Tests
-  #    uses: JasonEtco/create-an-issue@v2
-  #    if: ${{ false }} #needs.UI_Tests.outputs.ui_status == 'failure'
-  #    env:
-  #      GITHUB_TOKEN: ${{ secrets.PAT }} 
-  #    with:
-  #      filename: .github/issues/ui-issue-template.md
-  #      update_existing: true
+    #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail. 
+    #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action   
+    - name: Create ADO Bug on Failure for UI Tests
+      uses: JasonEtco/create-an-issue@v2
+      if: needs.UI_Tests.outputs.ui_status == 'failure'
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }} 
+      with:
+        filename: .github/issues/ui-issue-template.md
+        update_existing: true
 
   #----------------------------------------------------------------------------------------------#
 
   Release_To_Next_Env:
     #TODO [CQ]: In needs now also add BDD_Automated_Tests,UI_Tests. This ensures this stage runs after release & BDD & UI Test stages run
-    needs: [release] # [release,BDD_Automated_Tests,UI_Tests]
+    needs: [release,BDD_Automated_Tests,UI_Tests]
     runs-on: ubuntu-latest # The type of runner that the job will run on
     # The below conditions ensure that, this stage only runs for dev & qa, and only if release stages is a success, and that the tests didn't fail
     #TODO [CQ]: In if condition now also add BDD_Automated_Tests & UI_Tests success condition. This ensures this stage only runs if the tests pass
-    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' #&& needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
+    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
     steps:
     - name: Checkout Repository #Checkout the Repository into the agent
       uses: actions/checkout@v2
