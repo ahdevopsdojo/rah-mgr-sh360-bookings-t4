@@ -608,11 +608,6 @@ jobs:
     - name: Checkout Repository #Checkout the Repository into the agent
       uses: actions/checkout@v2
 
-    - name: Set Environment Variables - Booking All Stages # Set Variables
-      uses: ./.github/actions/set-variable
-      with:
-        variableFileName: 'all-stages-booking'
-
     - name: Configure parameters for Workflow Dispatch # Based on the current environment, this action evaluates the next environment to run the CD pipeline
       shell: bash
       run: |
@@ -623,7 +618,31 @@ jobs:
           echo "trigger=prd" >> $GITHUB_ENV
         fi
 
-    #TODO [CO]: Uncomment the below block to enable the evaluation of latency and availability of PRD application.
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
+
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-booking'
+
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Booking ${{ env.trigger }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'bookings-${{ env.trigger }}'
+        
+    - name: Login to Azure # Login to Azure with credentials of service principal stored in secrets
+      uses: azure/login@v1
+      if: env.trigger == 'prd'
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    #TODO [CO]: Uncomment the below block to enable the evaluation of latency,availability and HTTPStatusCodes of PRD application.
 
     ## This action is used to get the latency of the PRD bookings application using App Insights API
     #- name: Get Latency
@@ -668,6 +687,23 @@ jobs:
     #    then
     #      exit 1
     #    fi
+
+    ## This action is used to evaluate the App Service HTTP Logs from log analytics workspace of the PRD bookings application. 
+    ## If no logs with status code 500 are returned, the pipeline proceeds to PRD or else if it returns atleast one status 500 error, it stops release to PRD.
+    #- name: Log Analytics - Check App Service Logs # Create Resource Group using azure cli commands
+    #  uses: azure/CLI@v1
+    #  if: env.trigger == 'prd'
+    #  with:
+    #    inlineScript: |
+    #      az config set extension.use_dynamic_install=yes_without_prompt
+    #      workspaceId=$(az monitor log-analytics workspace show --resource-group "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --workspace-name "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceName }}-${{ env.team_suffix }}" | jq .customerId | tr -d '"')
+    #      logs=$(az monitor log-analytics query -w $workspaceId --analytics-query "AppServiceHTTPLogs | where TimeGenerated > ago(24h) and ScStatus ==500" | jq .[].CIp)
+    #      if [ -z "$logs" ]; then 
+    #        echo "PRD App Service is up and running"
+    #      else
+    #        echo "PRD App Service was down in last 24 hrs"
+    #        exit 1
+    #      fi
 
     # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
     #TODO [CD]: Remove the below if condition to enable the action
