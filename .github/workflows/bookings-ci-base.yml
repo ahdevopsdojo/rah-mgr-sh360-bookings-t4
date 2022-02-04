@@ -65,8 +65,7 @@ jobs:
 
       #TODO [CI]: This action is used to run unit tests in workflow. Remove the below if condition to enable the action
       - name: Run Unit Test #Run Unit Tests
-        run: dotnet test "D:\a\${{ env.repoName }}\${
-          { env.repoName }}\ModernizationWithAppServiceDotNET\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll" --results-directory "D:\a\${{ env.repoName }}\${{ env.repoName }}\" --filter TestCategory!=UITest
+        run: dotnet test "D:\a\${{ env.repoName }}\${{ env.repoName }}\ModernizationWithAppServiceDotNET\SmartHotel360.Registration.Web.Tests\bin\Debug\SmartHotel360.Registration.Web.Tests.dll" --results-directory "D:\a\${{ env.repoName }}\${{ env.repoName }}\" --filter TestCategory!=UITest
 
       - name: Copy Items to Upload Artifact folder #copy the files to publish as artifacts
         run: |
@@ -93,4 +92,3 @@ jobs:
           workflow: Bookings-CD-Base
           token: ${{ secrets.PAT }}
           inputs: '{ "environment": "dev" }'
-
