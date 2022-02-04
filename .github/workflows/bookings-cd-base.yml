@@ -88,7 +88,6 @@ jobs:
 
     #TODO [CD]: This action is used to initiate a deployment in a particular environment. Remove the below if condition to enable the action
     - name: Create GitHub deployment for deployment-${{ env.pipeline_env }}
-      if: ${{ false }}
       uses: chrnorm/deployment-action@releases/v1
       id: deployment
       with:
@@ -260,8 +259,7 @@ jobs:
         parameters: 'webSiteName="${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}" sqlservername="${{ env.cus_prefix }}-${{ env.sqlserver }}-${{ env.team_suffix }}" databasename="${{ env.databasename }}" authenticationMode="${{ env.authenticationMode }}" instrumentationKey="${{ steps.armAppInsightsOutput.outputs.appInsightsKey}}" keyVaultUri="https://${{ env.cus_prefix }}-${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" servicePrincipalClientId="${{ env.servicePrincipleClientId }}" servicePrincipalPassword="${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}" tenantId="${{ steps.appservicearmoutput.outputs.tenantId }}"' 
 
     #TODO [CD]: This action is used to deploy the bookings application onto Azure WebApp. Remove the below if condition to enable the action
-    - name: Azure WebApp 
-      if: ${{ false }}
+    - name: Azure WebApp
       id: webAppDeploy
       uses: Azure/webapps-deploy@v2
       with:
@@ -270,7 +268,7 @@ jobs:
 
     #TODO [CD]: This action is used to update the deployment status of release if the release is successful. Replace the ${{ false }} with success() to enable the below action
     - name: Update deployment status ${{ env.pipeline_env }} (success)
-      if: ${{ false }} #success()
+      if: success()
       uses: chrnorm/deployment-status@releases/v1
       with:
         token: "${{ github.token }}"
@@ -280,7 +278,7 @@ jobs:
 
     #TODO [CD]: This action is used to update the deployment status of release if the release is failure. Replace the ${{ false }} with failure() to enable the below action
     - name: Update deployment status ${{ env.pipeline_env }} (failure)
-      if: ${{ false }} #failure()
+      if: failure()
       uses: chrnorm/deployment-status@releases/v1
       with:
         token: "${{ github.token }}"
@@ -708,10 +706,8 @@ jobs:
     # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
     #TODO [CD]: Remove the below if condition to enable the action
     - name: Trigger - Release to ${{ env.trigger }}
-      if: ${{ false }}
       uses: benc-uk/workflow-dispatch@v1
       with:
         workflow: Bookings-CD-Base
         token: ${{ secrets.PAT }}
         inputs: '{ "environment": "${{ env.trigger }}" }'
-
