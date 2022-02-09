@@ -499,61 +499,60 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: OWASP Scan. Uncomment the below block to enable OWASP Scan stage
 
-  #OWASP_Scan:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: ubuntu-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    owasp_status: ${{ steps.owasptests.outcome }}
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-#
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
-#
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-booking'
-#
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
-#
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
-#
-  #  #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed bookings application. Remove the below if condition to enable the action
-  #  - name: OWASP ZAP Full Scan
-  #    if: ${{ false }}
-  #    id: owasptests
-  #    uses: zaproxy/action-full-scan@v0.2.0
-  #    with:
-  #      # Target URL
-  #      target: "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net"
-  #      # The action status will be set to fail if ZAP identifies any alerts during the full scan
-  #      fail_action: false
-  #      issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
+  OWASP_Scan:
+   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+   runs-on: ubuntu-latest # The type of runner that the job will run on
+   outputs: # Outputs expected from release job to be used in other jobs
+     owasp_status: ${{ steps.owasptests.outcome }}
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Organizational Details # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'org-details'
+
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Booking All Stages # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'all-stages-booking'
+
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Booking ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'bookings-${{ needs.release.outputs.pipeline_env }}'
+
+   # This action is used to send workflow status to subscribed Microsoft Teams channel
+   - name: Microsoft Teams Deploy Card
+     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+     if: always()
+     with:
+       # Microsoft Teams webhook URI
+       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+       # Github token
+       github-token: ${{ github.token }}
+       # Name of the environment (won't be included in the card if none)
+       environment: ${{ needs.release.outputs.pipeline_env }}
+       # Show the MS Teams card upon failure only of this Github Actions job
+       show-on-failure: true
+       custom-facts: |
+         - name: Stage
+           value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
+
+   #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed bookings application. Remove the below if condition to enable the action
+   - name: OWASP ZAP Full Scan
+     id: owasptests
+     uses: zaproxy/action-full-scan@v0.2.0
+     with:
+       # Target URL
+       target: "https://${{ env.cus_prefix }}-${{ env.webapp }}-${{ env.team_suffix }}.azurewebsites.net"
+       # The action status will be set to fail if ZAP identifies any alerts during the full scan
+       fail_action: false
+       issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
     
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: Issues Creation. Uncomment the below block to enable the Issues Creation Stage.
